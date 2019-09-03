@@ -1,0 +1,125 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Stand Alone Redis Cluster
+Transform: AWS::Serverless-2016-10-31
+
+Parameters:
+  Environment:
+    Type: String
+    Default: dev
+    AllowedValues:
+      - dev
+      - test
+      - prod
+  Service:
+    Type: String
+    Default: redis-cluster
+  CacheNodeType:
+    Description: The compute and memory capacity of nodes in a cache cluster
+    Type: String
+    Default: cache.t2.micro
+    AllowedValues:
+      - cache.c1.xlarge
+      - cache.m1.large
+      - cache.m1.medium
+      - cache.m1.small
+      - cache.m1.xlarge
+      - cache.m2.2xlarge
+      - cache.m2.4xlarge
+      - cache.m2.xlarge
+      - cache.m3.2xlarge
+      - cache.m3.large
+      - cache.m3.medium
+      - cache.m3.xlarge
+      - cache.m4.10xlarge
+      - cache.m4.2xlarge
+      - cache.m4.4xlarge
+      - cache.m4.large
+      - cache.m4.xlarge
+      - cache.r3.2xlarge
+      - cache.r3.4xlarge
+      - cache.r3.8xlarge
+      - cache.r3.large
+      - cache.r3.xlarge
+      - cache.r4.16xlarge
+      - cache.r4.2xlarge
+      - cache.r4.4xlarge
+      - cache.r4.8xlarge
+      - cache.r4.large
+      - cache.r4.xlarge
+      - cache.t1.micro
+      - cache.t2.medium
+      - cache.t2.micro
+      - cache.t2.small
+  NumCacheNodes:
+    Description: The number of cache nodes that the cache cluster should have
+    Type: Number
+    Default: 1
+
+Mappings:
+  dev:
+    vpc:
+      vpcId: vpc-id-dev
+      subnetIds: [ subnet-id-dev1, subnet-id-dev2, subnet-id-dev3 ]
+  test:
+    vpc:
+      vpcId: vpc-id-test
+      subnetIds: [ subnet-id-test-1, subnet-id-test2, subnet-id-test3 ]
+  prod:
+    vpc:
+      vpcId: vpc-id-prod
+      subnetIds: [ subnet-id-prod1, subnet-id-prod2, subnet-id-prod3 ]
+
+Resources:
+
+  RedisClusterSubnetGroup:
+    Type: AWS::ElastiCache::SubnetGroup
+    Properties:
+      Description: Subnet group for redis cluster
+      SubnetIds:
+        Fn::FindInMap: [ !Ref Environment, vpc,  subnetIds ]
+
+  RedisCacheCluster:
+    Type: AWS::ElastiCache::CacheCluster
+    Properties:
+      ClusterName: !Sub ${Service}
+      Engine: redis
+      AutoMinorVersionUpgrade: true
+      CacheNodeType: !Ref CacheNodeType
+      NumCacheNodes: !Ref NumCacheNodes
+      CacheSubnetGroupName: !Ref RedisClusterSubnetGroup
+      VpcSecurityGroupIds:
+        - !GetAtt RedisCacheSecurityGroup.GroupId
+
+  RedisCacheSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Redis Cluster Security Group
+      VpcId:
+        Fn::FindInMap: [ !Ref Environment, vpc, vpcId ]
+      SecurityGroupIngress:
+        - CidrIp: 0.0.0.0/0 # TODO: Secure base on requirement
+          IpProtocol: tcp
+          FromPort: 6379
+          ToPort: 6379
+      Tags:
+        - Key: Name
+          Value: Redis-Elasticache
+
+Outputs:
+  RedisElasticacheId:
+    Description: ElastiCache Redis Cluster ID
+    Export:
+      Name: RedisElasticacheId
+    Value: !Ref RedisCacheCluster
+
+  RedisElasticacheEndpoint:
+    Description: ElastiCache Cluster Address
+    Export:
+      Name: RedisElasticacheEndpoint
+    Value: !GetAtt RedisCacheCluster.RedisEndpoint.Address
+
+  RedisElasticacheSecurityGroup:
+    Description: Elasticache Security Group
+    Export:
+      Name: RedisElasticacheSecurityGroup
+    Value: !Ref RedisCacheSecurityGroup

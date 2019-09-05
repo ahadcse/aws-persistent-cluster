@@ -1,10 +1,20 @@
 image:
-  name: node:8.10-alpine
+  name: node:8.10-alpine # Docker image
   aws:
     access-key: $AWS_ACCESS_KEY_ID_DEV
     secret-key: $AWS_SECRET_ACCESS_KEY_DEV
 
 pipelines:
+
+  default:
+    - step:
+        name: Build and test
+        script:
+          - export ENVIRONMENT=dev
+          - export AWS_DEFAULT_PROFILE=$ENVIRONMENT
+          - export AWS_DEFAULT_REGION=$AWS_DEFAULT_REGION_DEV
+
+          - make install
   custom:
     dev-redis:
       - step:
@@ -19,6 +29,20 @@ pipelines:
             - pip install awscli
             - make deploy_redis
 
+    dev-mysql:
+      - step:
+          script:
+            - export ENVIRONMENT=dev
+            - export AWS_DEFAULT_PROFILE=$ENVIRONMENT
+            - export AWS_DEFAULT_REGION=$AWS_DEFAULT_REGION_DEV
+
+            - apk add --no-cache jq pwgen
+            - make deploy_vpc
+            - make deploy_db
+            - make enable_data_api
+            - make install args=--production
+            - make deploy_lambda
+
     test-redis:
       - step:
           script:
@@ -32,6 +56,20 @@ pipelines:
             - pip install awscli
             - make deploy_redis
 
+    test-mysql:
+      - step:
+          script:
+            - export ENVIRONMENT=test
+            - export AWS_DEFAULT_PROFILE=$ENVIRONMENT
+            - export AWS_DEFAULT_REGION=$AWS_DEFAULT_REGION_TEST
+
+            - apk add --no-cache jq pwgen
+            - make deploy_vpc
+            - make deploy_db
+            - make enable_data_api
+            - make install args=--production
+            - make deploy_lambda
+
     prod-redis:
       - step:
           script:
@@ -44,3 +82,18 @@ pipelines:
             - apk add --no-cache py-pip make bash git openssh-client
             - pip install awscli
             - make deploy_redis
+
+    prod-mysql:
+      - step:
+          script:
+            - export ENVIRONMENT=prod
+            - export AWS_DEFAULT_PROFILE=$ENVIRONMENT
+            - export AWS_DEFAULT_REGION=$AWS_DEFAULT_REGION_PROD
+
+            - apk add --no-cache jq pwgen
+            - make deploy_vpc
+            - make deploy_db
+            - make enable_data_api
+            - make install args=--production
+            - make deploy_lambda
+

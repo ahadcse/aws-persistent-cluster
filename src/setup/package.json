@@ -1,0 +1,18 @@
+{
+  "name": "setup",
+  "version": "1.0.0",
+  "scripts": {
+    "lint": "./node_modules/.bin/eslint ."
+  },
+  "dependencies": {
+    "mysql": "^2.16.0"
+  },
+  "devDependencies": {
+    "@types/mysql": "^2.15.5",
+    "@types/node": "^11.9.4",
+    "aws-sdk": "^2.401.0",
+    "mysql": "^2.16.0",
+    "eslint": "^6.1.0",
+    "eslint-plugin-sonarjs": "^0.4.0"
+  }
+}

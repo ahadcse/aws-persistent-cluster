@@ -1,0 +1,54 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Shared serverless db (RDS) cluster
+Transform: AWS::Serverless-2016-10-31
+
+Parameters:
+  Environment:
+    Type: String
+  Service:
+    Type: String
+  DBClusterName:
+    Type: String
+  DatabaseName:
+    Type: String
+  DBMasterPasswordEncrypted:
+    Type: String
+  DBMasterPasswordRaw:
+    Type: String
+Resources:
+
+  DbMasterPasswordParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/config/${Service}/mysql/master-password"
+      Type: String
+      Value: !Ref DBMasterPasswordEncrypted
+      Tags:
+        "Environment": !Ref Environment
+        "Project": !Ref Service
+
+  RDSCluster:
+    Type: AWS::RDS::DBCluster
+    Properties:
+      DBClusterIdentifier: !Ref DBClusterName
+      MasterUsername: admin
+      MasterUserPassword: !Ref DBMasterPasswordRaw
+      DatabaseName: !Ref DatabaseName
+      Engine: aurora
+      EngineMode: serverless
+      EngineVersion: 5.6.10a
+      ScalingConfiguration:
+        AutoPause: true
+        MaxCapacity: 4
+        MinCapacity: 1
+        SecondsUntilAutoPause: 900 # 15 min
+      DBSubnetGroupName: !ImportValue DbSubnetGroup
+      VpcSecurityGroupIds: [ !ImportValue DbSecurityGroupId ]
+
+Outputs:
+
+  DbClusterUrl:
+    Description: DB Host URL
+    Value: !GetAtt RDSCluster.Endpoint.Address
+    Export:
+      Name: DbClusterUrl

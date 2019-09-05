@@ -1,0 +1,255 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Shared serverless db cluster. VPC Configuration
+Transform: AWS::Serverless-2016-10-31
+
+Parameters:
+  Environment:
+    Type: String
+  Service:
+    Type: String
+
+Mappings:
+  dev:
+    vpc:
+      vpcId: vpc-id-dev
+    subnetting:
+      subnetIds: [subnet-id-dev1, subnet-id-dev2, subnet-id-dev3]
+  test:
+    vpc:
+      vpcId: vpc-id-test
+    subnetting:
+      subnetIds: [subnet-id-test-1, subnet-id-test2, subnet-id-test3]
+  prod:
+    vpc:
+      vpcId: vpc-id-prod
+    subnetting:
+      subnetIds: [subnet-id-prod1, subnet-id-prod2, subnet-id-prod3]
+
+Resources:
+
+  DBPasswordCryptoKey:
+    Type: AWS::KMS::Key
+    Properties:
+      Description: "CMK for encrypt/decrypt master db password"
+      KeyPolicy:
+        Version: "2012-10-17"
+        Id: "key-default-1"
+        Statement:
+          - Sid: "Enable IAM Role and PipelineUser Permissions"
+            Effect: "Allow"
+            Principal:
+              AWS:
+                - !Sub "arn:aws:iam::${AWS::AccountId}:user/User"
+                - !Sub "arn:aws:iam::${AWS::AccountId}:root"
+            Action: "kms:*"
+            Resource: "*"
+      Tags:
+        - Key: "Environment"
+          Value: !Ref Environment
+        - Key: "Project"
+          Value: !Ref Service
+
+  DBPasswordCryptoKeyAlias:
+    Type: AWS::KMS::Alias
+    Properties:
+      AliasName: alias/dbPasswordCryptoKey
+      TargetKeyId: !Ref DBPasswordCryptoKey
+
+  RDSSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Access to the ECS hosts and RDS that run on them
+      VpcId:
+        Fn::FindInMap: [ !Ref Environment, vpc, vpcId ]
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 3306
+          ToPort: 3306
+          CidrIp: 0.0.0.0/0
+
+  DBSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: CloudFormation managed DB subnet group.
+      SubnetIds:
+        - Fn::Select:
+          - 0
+          - Fn::FindInMap: [ !Ref Environment, subnetting, subnetIds ]
+        - Fn::Select:
+          - 1
+          - Fn::FindInMap: [ !Ref Environment, subnetting, subnetIds ]
+        - Fn::Select:
+          - 2
+          - Fn::FindInMap: [ !Ref Environment, subnetting, subnetIds ]
+
+  VpcIdDevA:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: "/config/db-cluster/subnetIds-a-dev"
+      Type: String
+      Value:
+        Fn::Select:
+          - 0
+          - Fn::FindInMap: [ !Ref Environment, subnetting, subnetIds ]
+      Tags:
+        "Environment": !Ref Environment
+        "Project": !Ref Service
+
+
+  VpcIdDevB:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: "/config/db-cluster/subnetIds-b-dev"
+      Type: String
+      Value:
+        Fn::Select:
+          - 1
+          - Fn::FindInMap: [ !Ref Environment, subnetting, subnetIds ]
+      Tags:
+        "Environment": !Ref Environment
+        "Project": !Ref Service
+
+  VpcIdDevC:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: "/config/db-cluster/subnetIds-c-dev"
+      Type: String
+      Value:
+        Fn::Select:
+          - 2
+          - Fn::FindInMap: [ !Ref Environment, subnetting, subnetIds ]
+      Tags:
+        "Environment": !Ref Environment
+        "Project": !Ref Service
+
+
+  VpcIdTestA:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: "/config/db-cluster/subnetIds-a-test"
+      Type: String
+      Value:
+        Fn::Select:
+          - 0
+          - Fn::FindInMap: [ !Ref Environment, subnetting, subnetIds ]
+      Tags:
+        "Environment": !Ref Environment
+        "Project": !Ref Service
+
+  VpcIdTestB:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: "/config/db-cluster/subnetIds-b-test"
+      Type: String
+      Value:
+        Fn::Select:
+          - 1
+          - Fn::FindInMap: [ !Ref Environment, subnetting, subnetIds ]
+      Tags:
+        "Environment": !Ref Environment
+        "Project": !Ref Service
+
+  VpcIdTestC:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: "/config/db-cluster/subnetIds-c-test"
+      Type: String
+      Value:
+        Fn::Select:
+          - 2
+          - Fn::FindInMap: [ !Ref Environment, subnetting, subnetIds ]
+      Tags:
+        "Environment": !Ref Environment
+        "Project": !Ref Service
+
+  VpcIdStageA:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: "/config/db-cluster/subnetIds-a-stage"
+      Type: String
+      Value:
+        Fn::Select:
+          - 0
+          - Fn::FindInMap: [ !Ref Environment, subnetting, subnetIds ]
+      Tags:
+        "Environment": !Ref Environment
+        "Project": !Ref Service
+
+  VpcIdStageB:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: "/config/db-cluster/subnetIds-b-stage"
+      Type: String
+      Value:
+        Fn::Select:
+          - 1
+          - Fn::FindInMap: [ !Ref Environment, subnetting, subnetIds ]
+      Tags:
+        "Environment": !Ref Environment
+        "Project": !Ref Service
+
+  VpcIdStageC:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: "/config/db-cluster/subnetIds-c-stage"
+      Type: String
+      Value:
+        Fn::Select:
+          - 2
+          - Fn::FindInMap: [ !Ref Environment, subnetting, subnetIds ]
+      Tags:
+        "Environment": !Ref Environment
+        "Project": !Ref Service
+
+  VpcIdProdA:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: "/config/db-cluster/subnetIds-a-prod"
+      Type: String
+      Value:
+        Fn::Select:
+          - 0
+          - Fn::FindInMap: [ !Ref Environment, subnetting, subnetIds ]
+      Tags:
+        "Environment": !Ref Environment
+        "Project": !Ref Service
+
+  VpcIdProdB:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: "/config/db-cluster/subnetIds-b-prod"
+      Type: String
+      Value:
+        Fn::Select:
+          - 1
+          - Fn::FindInMap: [ !Ref Environment, subnetting, subnetIds ]
+      Tags:
+        "Environment": !Ref Environment
+        "Project": !Ref Service
+
+  VpcIdProdC:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: "/config/db-cluster/subnetIds-c-prod"
+      Type: String
+      Value:
+        Fn::Select:
+          - 2
+          - Fn::FindInMap: [ !Ref Environment, subnetting, subnetIds ]
+      Tags:
+        "Environment": !Ref Environment
+        "Project": !Ref Service
+
+Outputs:
+
+  DbSubnetGroup:
+    Description: DB Security Group Id
+    Value: !Ref DBSubnetGroup
+    Export:
+      Name: DbSubnetGroup
+
+  DbSecurityGroupId:
+    Description: DB Security Group Id
+    Value: !GetAtt RDSSecurityGroup.GroupId
+    Export:
+      Name: DbSecurityGroupId

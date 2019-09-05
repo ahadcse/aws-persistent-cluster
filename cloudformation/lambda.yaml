@@ -1,0 +1,78 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Shared serverless db cluster v2
+Transform: AWS::Serverless-2016-10-31
+
+Parameters:
+  Environment:
+    Type: String
+  Service:
+    Type: String
+  DBName:
+    Type: String
+
+Resources:
+
+  Troubleshoot:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${Service}-setup
+      CodeUri: ../src/setup
+      Role: !GetAtt TroubleshootRole.Arn
+      Runtime: nodejs8.10
+      Handler: index.handler
+      Timeout: 180
+      MemorySize: 640
+      Environment:
+        Variables:
+          ENVIRONMENT: !Ref Environment
+          DB_HOST:
+            Fn::ImportValue: DbClusterUrl
+          DB_NAME: 'testdb'
+          DB_USER: 'admin'
+      VpcConfig:
+        SecurityGroupIds:
+          - Fn::ImportValue:
+              DbSecurityGroupId
+        SubnetIds:
+          - !Join ['', ['{{resolve:ssm:/config/db-cluster/subnetIds-a-', !Ref Environment, ':1}}' ]]
+          - !Join ['', ['{{resolve:ssm:/config/db-cluster/subnetIds-b-', !Ref Environment, ':1}}' ]]
+          - !Join ['', ['{{resolve:ssm:/config/db-cluster/subnetIds-c-', !Ref Environment, ':1}}' ]]
+
+  TroubleshootRole:
+    Type: AWS::IAM::Role
+    Properties:
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
+        - arn:aws:iam::aws:policy/AmazonRDSDataFullAccess
+      Policies:
+        - PolicyName: logs
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: arn:aws:logs:*:*:*
+        - PolicyName: ssm
+          PolicyDocument:
+            Statement:
+              Effect: Allow
+              Action:
+                - ssm:GetParameter
+              Resource: arn:aws:ssm:*:*:*
+        - PolicyName: kms
+          PolicyDocument:
+            Statement:
+              Effect: Allow
+              Action:
+                - kms:*
+              Resource: arn:aws:kms:*:*:*
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: "lambda.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"

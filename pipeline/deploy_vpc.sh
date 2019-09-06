@@ -11,7 +11,7 @@ aws cloudformation deploy \
 	--stack-name "$STACK_NAME"-vpc \
 	--capabilities CAPABILITY_NAMED_IAM \
 	--region "$AWS_REGION" \
-	--tags Environment="$ENVIRONMENT" Owner=beam Project="$STACK_NAME" \
+	--tags Environment="$ENVIRONMENT" Project="$STACK_NAME" \
 	--parameter-overrides \
 	Environment="$ENVIRONMENT" \
 	Service="$STACK_NAME"

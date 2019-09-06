@@ -1,5 +1,5 @@
 image:
-  name: node:8.10-alpine # Docker image
+  name: node:8.10-alpine # Or Docker images that serves the purpose
   aws:
     access-key: $AWS_ACCESS_KEY_ID_DEV
     secret-key: $AWS_SECRET_ACCESS_KEY_DEV

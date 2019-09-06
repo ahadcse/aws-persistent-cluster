@@ -55,7 +55,17 @@ Unless stated otherwise the connection will be to default database
 
 A shared serverless DB (MySQL) cluster.
 
-### How to connect to MySQL from Lmabda
+### How to create DB in that shared cluster
+
+Following is the sample event that we need to send to lambda to create a database:
+```json
+{ 
+  "type": "createdb",
+  "db": "testdb"
+}
+```
+
+### How to connect to MySQL from Lambda
 
 Following is the example CloudFormation template sample to connect to MySQL:
 

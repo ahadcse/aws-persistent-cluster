@@ -71,7 +71,7 @@ deploy_vpc:
 deploy_lambda:
 	@echo "----- Deploying Lambda Stack: START -----"
 	$(call cfn-deploy,lambda)
-	@echo "----- Deploying Lambda Stack: DONE -----"
+	@echo "----- Deploying Lambda Stack: DONE ------"
 
 enable_data_api:
 	aws rds modify-db-cluster --db-cluster-identifier $(RDS_STACK_NAME) --enable-http-endpoint --apply-immediately
